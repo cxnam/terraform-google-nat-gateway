@@ -14,37 +14,8 @@
  * limitations under the License.
  */
 
-variable gke_master_ip {
-  description = "The IP address of the GKE master or a semicolon separated string of multiple IPs"
-}
-
-variable gke_node_tag {
-  description = "The network tag for the gke nodes"
-}
-
-variable region {
-  default = "us-central1"
-}
-
-variable zone {
-  default = "us-central1-f"
-}
-
-variable network {
-  default = "default"
-}
-
-variable subnetwork {
-  default = ""
-}
-
-provider google {
-  region = "${var.region}"
-  version = "1.18"
-}
-
 module "nat" {
-  // source  = "github.com/GoogleCloudPlatform/terraform-google-nat-gateway"
+  // source  = "github.com/cxnam/terraform-google-nat-gateway"
   source     = "../../"
   region     = "${var.region}"
   zone       = "${var.zone}"
@@ -63,8 +34,4 @@ resource "google_compute_route" "gke-master-default-gw" {
   next_hop_gateway = "default-internet-gateway"
   tags             = ["${var.gke_node_tag}"]
   priority         = 700
-}
-
-output "ip-nat-gateway" {
-  value = "${module.nat.external_ip}"
 }

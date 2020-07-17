@@ -18,27 +18,27 @@ data "template_file" "nat-startup-script" {
   template = "${file("${format("%s/config/startup.sh", path.module)}")}"
 
   vars {
-    squid_enabled = "${var.squid_enabled}"
-    squid_config  = "${var.squid_config}"
-    module_path   = "${path.module}"
+    squid_enabled = var.squid_enabled
+    squid_config  = var.squid_config
+    module_path   = path.module
   }
 }
 
 data "google_compute_network" "network" {
-  name    = "${var.network}"
-  project = "${var.network_project == "" ? var.project : var.network_project}"
+  name    = var.network
+  project = (var.network_project == "" ? var.project : var.network_project)
 }
 
 data "google_compute_address" "default" {
-  count   = "${var.ip_address_name == "" ? 0 : 1}"
-  name    = "${var.ip_address_name}"
-  project = "${var.network_project == "" ? var.project : var.network_project}"
-  region  = "${var.region}"
+  count   = (var.ip_address_name == "" ? 0 : 1)
+  name    = var.ip_address_name
+  project = (var.network_project == "" ? var.project : var.network_project)
+  region  = var.region
 }
 
 locals {
-  zone          = "${var.zone == "" ? lookup(var.region_params["${var.region}"], "zone") : var.zone}"
-  name          = "${var.name}nat-gateway-${local.zone}"
+  zone          = (var.zone == "" ? lookup(var.region_params["${var.region}"], "zone") : var.zone)
+  name          = "{var.name}nat-gateway-{local.zone}"
   instance_tags = ["inst-${local.zonal_tag}", "inst-${local.regional_tag}"]
   zonal_tag     = "${var.name}nat-${local.zone}"
   regional_tag  = "${var.name}nat-${var.region}"
@@ -91,15 +91,15 @@ module "nat-gateway" {
 }
 
 resource "google_compute_route" "nat-gateway" {
-  count                  = "${var.module_enabled ? 1 : 0}"
-  name                   = "${local.zonal_tag}"
-  project                = "${var.project}"
-  dest_range             = "${var.dest_range}"
-  network                = "${data.google_compute_network.network.self_link}"
+  count                  = (var.module_enabled ? 1 : 0)
+  name                   = local.zonal_tag
+  project                = var.project
+  dest_range             = var.dest_range
+  network                = data.google_compute_network.network.self_link
   next_hop_instance      = "${element(split("/", element(module.nat-gateway.instances[0], 0)), 10)}"
-  next_hop_instance_zone = "${local.zone}"
+  next_hop_instance_zone = local.zone
   tags                   = ["${compact(concat(list("${local.regional_tag}", "${local.zonal_tag}"), var.tags))}"]
-  priority               = "${var.route_priority}"
+  priority               = var.route_priority
 }
 
 resource "google_compute_firewall" "nat-gateway" {
@@ -117,8 +117,8 @@ resource "google_compute_firewall" "nat-gateway" {
 }
 
 resource "google_compute_address" "default" {
-  count   = "${var.module_enabled && var.ip_address_name == "" ? 1 : 0}"
-  name    = "${local.zonal_tag}"
-  project = "${var.project}"
-  region  = "${var.region}"
+  count   = (var.module_enabled && var.ip_address_name == "" ? 1 : 0)
+  name    = local.zonal_tag
+  project = var.project
+  region  = var.region
 }
